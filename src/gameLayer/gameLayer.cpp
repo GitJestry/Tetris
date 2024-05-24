@@ -115,7 +115,7 @@ void createNewBlockChain() {
 		std::vector<int> verteilung = randomZahlenArray(0,6, 7);
 		int random = randomZahlenArray(0,12, 13)[0];
 		for ( auto zahl : verteilung ) {
-			glm::vec2 blockpos = {600, 300};
+			glm::vec2 blockpos = {600, 270};
 			gl2d::Color4f col = randomColor();
 			blockchain.objects.emplace_back(std::make_shared<GameObjects::Block>( blockpos, blocksize, col, zahl));
 		}
@@ -149,15 +149,15 @@ void initScene( int width, int height ) {
 
 
 // ebenen sind 0, 1, 2, 3 usw.
-void letBlocksFall(int lowest_ebene, int gap )  {
+void letBlocksFall(std::array<int, 20> ebenenMove )  {
 	int startEbene = 870;
 	for ( auto& bloecke : blocks.objects ) {
 		for( auto& oneblocks : bloecke->shape) {
 			int one_ebene = (startEbene - oneblocks.y)/30;
-			if ( one_ebene > lowest_ebene && lowest_ebene >= 0 ) {
-				bloecke->move(0, blocksize * gap);
-				break;
-			} 
+			if ( one_ebene >= 0 && one_ebene <= 19 ) {
+				if ( ebenenMove[one_ebene] != 0) 
+					oneblocks.move(0, blocksize * ebenenMove[one_ebene]);
+			}
 		}
 	}
 	/**
@@ -168,6 +168,11 @@ void letBlocksFall(int lowest_ebene, int gap )  {
 
 	 * 
 	 */
+	int gap = 0;
+	for ( auto elem : ebenenMove) {
+		if ( elem > gap )
+			gap = elem;
+	}
 	switch(gap) {
 		case 0: break;
 		case 1: score += 40; break;
@@ -186,7 +191,6 @@ using shape_ptr = std::shared_ptr<std::vector<GameObjects::OneBlock>>;
 void checkTenBlocks() {
     int startEbene = 870;
     std::array< std::vector<std::shared_ptr<GameObjects::Block> > , 20> ebenen;
-	int lowestEbene = 21;
     // Populate the ebenen array
     for (auto& elem : blocks.objects) { // Iterate through each game object
         for (auto& oneblock : elem->shape) { // Iterate through each block in the shape
@@ -196,13 +200,14 @@ void checkTenBlocks() {
             }
         }
     }
-	int gap = 0;
+	std::array<int, 20> downmove_perebene = {0};
     // Check and modify levels with 10 or more blocks
     for (int i = 0; i < ebenen.size(); i++) {
         if (ebenen[i].size() >= 10) { // Check if the level has 10 or more blocks
-			if ( i < lowestEbene )
-				lowestEbene = i;
-			gap += 1;
+			for ( int j = 0; j < downmove_perebene.size(); j++ ) {
+				if ( j > i ) 
+					downmove_perebene[j] += 1;
+			} 
             for (auto& block : ebenen[i]) { // Iterate through blocks at this level
                 for (auto it = block->shape.begin(); it != block->shape.end(); ) {
                     if (it->y == startEbene - 30 * i) { // If the block's y-coordinate matches the level
@@ -214,7 +219,7 @@ void checkTenBlocks() {
             }
         }
     }
-	letBlocksFall(lowestEbene, gap);
+	letBlocksFall(downmove_perebene);
 }
 
 
